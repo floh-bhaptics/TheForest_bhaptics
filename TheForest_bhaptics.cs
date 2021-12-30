@@ -22,7 +22,9 @@ namespace TheForest_bhaptics
             tactsuitVr.PlaybackHaptics("HeartBeat");
         }
 
-        
+
+        #region Eating / drinking
+
         [HarmonyPatch(typeof(PlayerStats), "Drink", new Type[] { })]
         public class bhaptics_PlayerDrinks
         {
@@ -52,6 +54,94 @@ namespace TheForest_bhaptics
                 tactsuitVr.PlaybackHaptics("Drinking");
             }
         }
+
+        [HarmonyPatch(typeof(PlayerSfx), "PlayEat", new Type[] { })]
+        public class bhaptics_PlayEat
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("Eating");
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerSfx), "PlayStaminaBreath", new Type[] { })]
+        public class bhaptics_PlayStaminaBreath
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("Breathing");
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerSfx), "PlayColdSfx", new Type[] { })]
+        public class bhaptics_PlayCold
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.StartShiver();
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerSfx), "StopColdSfx", new Type[] { })]
+        public class bhaptics_StopCold
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.StopShiver();
+            }
+        }
+
+        
+        #endregion
+
+        #region World interaction
+
+        [HarmonyPatch(typeof(inWaterChecker), "FixedUpdate", new Type[] {  })]
+        public class bhaptics_InWaterChecker
+        {
+            [HarmonyPostfix]
+            public static void Postfix(inWaterChecker __instance)
+            {
+                if (!__instance.inWater) { tactsuitVr.StopWater(); return; }
+                else { tactsuitVr.StartWater(); }
+                if (__instance.swimming) { tactsuitVr.StartWater(); }
+                tactsuitVr.LOG("Water height: " + __instance.waterHeight.ToString());
+            }
+        }
+
+        [HarmonyPatch(typeof(FirstPersonCharacter), "HandleLanded", new Type[] { })]
+        public class bhaptics_HandleLanded
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                //tactsuitVr.LOG("HandleLanded");
+                //tactsuitVr.PlaybackHaptics("FallDamage");
+            }
+        }
+        
+        [HarmonyPatch(typeof(FirstPersonCharacter), "OnCollisionEnterProxied", new Type[] { typeof(Collision) })]
+        public class bhaptics_CollisionEnter
+        {
+            [HarmonyPostfix]
+            public static void Postfix(FirstPersonCharacter __instance, Collision coll)
+            {
+                if (coll.impulse.y >= 100f) { tactsuitVr.PlaybackHaptics("FallDamage"); }
+                //tactsuitVr.LOG("Collision impulse: " + coll.impulse.x.ToString() + " " + coll.impulse.y.ToString() + " " + coll.impulse.z.ToString());
+                //tactsuitVr.LOG("Character rotation: " + __instance.transform.rotation.eulerAngles.y.ToString());
+                //tactsuitVr.LOG(" ");
+                //tactsuitVr.PlaybackHaptics("FallDamage");
+            }
+        }
+        
+
+        #endregion
+
+        #region Take damage
 
         [HarmonyPatch(typeof(PlayerStats), "Explosion", new Type[] { typeof(float) })]
         public class bhaptics_Explosion
@@ -92,18 +182,8 @@ namespace TheForest_bhaptics
             [HarmonyPostfix]
             public static void Postfix()
             {
+                tactsuitVr.LOG("Fell");
                 tactsuitVr.PlaybackHaptics("FallDamage");
-            }
-        }
-
-        [HarmonyPatch(typeof(PlayerStats), "HealthChange", new Type[] { typeof(float) })]
-        public class bhaptics_HealthChange
-        {
-            [HarmonyPostfix]
-            public static void Postfix(PlayerStats __instance, float amount)
-            {
-                if (__instance.IsHealthInGreyZone) { tactsuitVr.StartHeartBeat(); }
-                else { tactsuitVr.StopHeartBeat(); }
             }
         }
 
@@ -113,6 +193,7 @@ namespace TheForest_bhaptics
             [HarmonyPostfix]
             public static void Postfix(int damage, bool ignoreArmor, PlayerStats.DamageType type)
             {
+                tactsuitVr.LOG("Damage: " + type.ToString());
                 switch (type)
                 {
                     case PlayerStats.DamageType.Drowning:
@@ -151,7 +232,58 @@ namespace TheForest_bhaptics
             }
         }
 
-        [HarmonyPatch(typeof(planeEvents), "fallForward1", new Type[] {  })]
+
+        [HarmonyPatch(typeof(PlayerStats), "hitFallDown", new Type[] {  })]
+        public class bhaptics_HitFallDown
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.LOG("HitFallDown");
+                tactsuitVr.PlaybackHaptics("FallDamage");
+            }
+        }
+
+        #endregion
+
+        #region Die / Knockout
+
+        [HarmonyPatch(typeof(PlayerStats), "KillPlayer", new Type[] {  })]
+        public class bhaptics_KillPlayer
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.StopThreads();
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerStats), "KnockOut", new Type[] { })]
+        public class bhaptics_KnockOut
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.StopThreads();
+                tactsuitVr.PlaybackHaptics("HeartBeat");
+            }
+        }
+        
+        [HarmonyPatch(typeof(PlayerStats), "WakeFromKnockOut", new Type[] { typeof(bool), typeof(WaitForSeconds) })]
+        public class bhaptics_WakeFromKnockOut
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("NeckTingleShort");
+            }
+        }
+
+        #endregion
+
+        #region Planecrash cutscene
+
+        [HarmonyPatch(typeof(planeEvents), "fallForward1", new Type[] { })]
         public class bhaptics_PlaneFallForward1
         {
             [HarmonyPostfix]
@@ -190,47 +322,18 @@ namespace TheForest_bhaptics
                 tactsuitVr.PlaybackHaptics("HeartBeat");
             }
         }
+        #endregion
 
-        [HarmonyPatch(typeof(PlayerStats), "hitFallDown", new Type[] {  })]
-        public class bhaptics_HitFallDown
+        [HarmonyPatch(typeof(PlayerStats), "HealthChange", new Type[] { typeof(float) })]
+        public class bhaptics_HealthChange
         {
             [HarmonyPostfix]
-            public static void Postfix()
+            public static void Postfix(PlayerStats __instance, float amount)
             {
-                tactsuitVr.PlaybackHaptics("FallDamage");
-            }
-        }
-
-        [HarmonyPatch(typeof(PlayerStats), "KillPlayer", new Type[] {  })]
-        public class bhaptics_KillPlayer
-        {
-            [HarmonyPostfix]
-            public static void Postfix()
-            {
-                tactsuitVr.StopThreads();
+                if (__instance.IsHealthInGreyZone) { tactsuitVr.StartHeartBeat(); }
+                else { tactsuitVr.StopHeartBeat(); }
             }
         }
 
-        [HarmonyPatch(typeof(PlayerStats), "KnockOut", new Type[] { })]
-        public class bhaptics_KnockOut
-        {
-            [HarmonyPostfix]
-            public static void Postfix()
-            {
-                tactsuitVr.StopThreads();
-                tactsuitVr.PlaybackHaptics("HeartBeat");
-            }
-        }
-        
-        [HarmonyPatch(typeof(PlayerStats), "WakeFromKnockOut", new Type[] { typeof(bool), typeof(WaitForSeconds) })]
-        public class bhaptics_WakeFromKnockOut
-        {
-            [HarmonyPostfix]
-            public static void Postfix()
-            {
-                tactsuitVr.PlaybackHaptics("NeckTingleShort");
-            }
-        }
-        
     }
 }

@@ -13,7 +13,7 @@ namespace MyBhapticsTactsuit
         public bool systemInitialized = false;
         private static ManualResetEvent HeartBeat_mrse = new ManualResetEvent(false);
         private static ManualResetEvent Water_mrse = new ManualResetEvent(false);
-        private static ManualResetEvent Choking_mrse = new ManualResetEvent(false);
+        private static ManualResetEvent Shivering_mrse = new ManualResetEvent(false);
         public Dictionary<String, FileInfo> FeedbackMap = new Dictionary<String, FileInfo>();
 
         private static bHaptics.RotationOption defaultRotationOption = new bHaptics.RotationOption(0.0f, 0.0f);
@@ -38,12 +38,12 @@ namespace MyBhapticsTactsuit
             }
         }
 
-        public void ChokingFunc()
+        public void ShiveringFunc()
         {
             while (true)
             {
-                Choking_mrse.WaitOne();
-                bHaptics.SubmitRegistered("Choking");
+                Shivering_mrse.WaitOne();
+                bHaptics.SubmitRegistered("Shiver");
                 Thread.Sleep(1050);
             }
         }
@@ -61,8 +61,8 @@ namespace MyBhapticsTactsuit
             HeartBeatThread.Start();
             Thread WaterThread = new Thread(WaterFunc);
             WaterThread.Start();
-            Thread ChokingThread = new Thread(ChokingFunc);
-            ChokingThread.Start();
+            Thread ShiveringThread = new Thread(ShiveringFunc);
+            ShiveringThread.Start();
         }
 
         public void LOG(string logStr)
@@ -191,6 +191,27 @@ namespace MyBhapticsTactsuit
         public void StopHeartBeat()
         {
             HeartBeat_mrse.Reset();
+        }
+
+        public void StartWater()
+        {
+            Water_mrse.Set();
+        }
+
+        public void StopWater()
+        {
+            Water_mrse.Reset();
+            StopHapticFeedback("WaterSlushing");
+        }
+
+        public void StartShiver()
+        {
+            Shivering_mrse.Set();
+        }
+
+        public void StopShiver()
+        {
+            Shivering_mrse.Reset();
         }
 
         public bool IsPlaying(String effect)
