@@ -116,16 +116,20 @@ namespace TheForest_bhaptics
                 switch (type)
                 {
                     case PlayerStats.DamageType.Drowning:
-                        tactsuitVr.PlaybackHaptics("Choking");
+                        if (!tactsuitVr.IsPlaying("Choking"))
+                            tactsuitVr.PlaybackHaptics("Choking");
                         break;
                     case PlayerStats.DamageType.Fire:
-                        tactsuitVr.PlaybackHaptics("Burning");
+                        if (!tactsuitVr.IsPlaying("Burning"))
+                            tactsuitVr.PlaybackHaptics("Burning");
                         break;
                     case PlayerStats.DamageType.Frost:
-                        tactsuitVr.PlaybackHaptics("Freezing");
+                        if (!tactsuitVr.IsPlaying("Freezing"))
+                            tactsuitVr.PlaybackHaptics("Freezing");
                         break;
                     case PlayerStats.DamageType.Poison:
-                        tactsuitVr.PlaybackHaptics("Poison");
+                        if (!tactsuitVr.IsPlaying("Poison"))
+                            tactsuitVr.PlaybackHaptics("Poison");
                         break;
                     case PlayerStats.DamageType.Physical:
                         tactsuitVr.PlaybackHaptics("Impact");
@@ -146,7 +150,46 @@ namespace TheForest_bhaptics
                 tactsuitVr.LOG("Hit direction: " + pos.x.ToString() + " " + pos.z.ToString());
             }
         }
-        
+
+        [HarmonyPatch(typeof(planeEvents), "fallForward1", new Type[] {  })]
+        public class bhaptics_PlaneFallForward1
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("PlaneFall");
+            }
+        }
+
+        [HarmonyPatch(typeof(planeEvents), "fallForward2", new Type[] { })]
+        public class bhaptics_PlaneFallForward2
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("PlaneFall");
+            }
+        }
+
+        [HarmonyPatch(typeof(planeEvents), "hitGround", new Type[] { })]
+        public class bhaptics_PlaneHitGround
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("PlaneHitGround");
+            }
+        }
+
+        [HarmonyPatch(typeof(planeEvents), "goBlack", new Type[] { })]
+        public class bhaptics_PlaneGoBlack
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("HeartBeat");
+            }
+        }
 
         [HarmonyPatch(typeof(PlayerStats), "hitFallDown", new Type[] {  })]
         public class bhaptics_HitFallDown
