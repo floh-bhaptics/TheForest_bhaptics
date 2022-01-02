@@ -253,6 +253,8 @@ namespace TheForest_bhaptics
                             // tactsuitVr.LOG("Ignored collider: " + colliderName);
                             continue;
                         }
+                        // even for important item, very low down only at lowered intensity
+                        intensity *= 0.7f;
                     }
                     //tactsuitVr.LOG("Contact point: " + point.point.x.ToString() + " " + point.point.y.ToString() + " " + point.point.z.ToString());
                     //tactsuitVr.LOG("Hit point: " + myHit.x.ToString() + " " + myHit.y.ToString() + " " + myHit.z.ToString());
@@ -338,7 +340,7 @@ namespace TheForest_bhaptics
                             tactsuitVr.PlaybackHaptics("Poison");
                         break;
                     case PlayerStats.DamageType.Physical:
-                        tactsuitVr.PlaybackHaptics("Impact");
+                        //tactsuitVr.PlaybackHaptics("Impact");
                         break;
                     default:
                         break;
@@ -380,6 +382,26 @@ namespace TheForest_bhaptics
             public static void Postfix(weaponInfo __instance, Collider other)
             {
                 tactsuitVr.Recoil("Blade", isRightHanded);
+            }
+        }
+
+        [HarmonyPatch(typeof(GunShoot), "Start", new Type[] {  })]
+        public class bhaptics_GunShoot
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.Recoil("Gun", isRightHanded);
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerSfx), "PlayShootFlareSfx", new Type[] { })]
+        public class bhaptics_FlareShoot
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.Recoil("Gun", isRightHanded);
             }
         }
 
