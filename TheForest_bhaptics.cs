@@ -14,6 +14,7 @@ namespace TheForest_bhaptics
     public class TheForest_bhaptics : MelonMod
     {
         public static TactsuitVR tactsuitVr;
+        public static bool isRightHanded = true;
 
         public override void OnApplicationStart()
         {
@@ -21,6 +22,57 @@ namespace TheForest_bhaptics
             tactsuitVr = new TactsuitVR();
             tactsuitVr.PlaybackHaptics("HeartBeat");
         }
+
+        private static KeyValuePair<float, float> getAngleAndShift(Transform player, Vector3 hit)
+        {
+            // bhaptics starts in the front, then rotates to the left. 0° is front, 90° is left, 270° is right.
+            Vector3 patternOrigin = new Vector3(0f, 0f, 1f);
+            // y is "up", z is "forward" in local coordinates
+            Vector3 hitPosition = hit - player.position;
+            //tactsuitVr.LOG("Relative x-z-position: " + hitPosition.x.ToString() + " " + hitPosition.z.ToString());
+            Quaternion myPlayerRotation = player.rotation;
+            Vector3 playerDir = myPlayerRotation.eulerAngles;
+            //tactsuitVr.LOG("PlayerDir: " + playerDir.y.ToString());
+            //tactsuitVr.LOG("PlayerRot: " + playerRotation.ToString());
+            Vector3 flattenedHit = new Vector3(hitPosition.x, 0f, hitPosition.z);
+            float earlyhitAngle = Vector3.Angle(flattenedHit, patternOrigin);
+            Vector3 earlycrossProduct = Vector3.Cross(flattenedHit, patternOrigin);
+            if (earlycrossProduct.y > 0f) { earlyhitAngle *= -1f; }
+            //tactsuitVr.LOG("EarlyHitAngle: " + earlyhitAngle.ToString());
+            //float myRotation = earlyhitAngle - playerRotation;
+            float myRotation = earlyhitAngle - playerDir.y;
+            myRotation *= -1f;
+            if (myRotation < 0f) { myRotation = 360f + myRotation; }
+            //tactsuitVr.LOG("myHitAngle: " + myRotation.ToString());
+
+
+            float hitShift = hitPosition.y;
+            //tactsuitVr.LOG("HitShift: " + hitShift.ToString());
+            float upperBound = -1.0f;
+            float lowerBound = -2.0f;
+            if (hitShift > upperBound) { hitShift = 0.5f; }
+            else if (hitShift < lowerBound) { hitShift = -0.5f; }
+            else { hitShift = (hitShift - lowerBound) / (upperBound - lowerBound) - 0.5f; }
+            //tactsuitVr.LOG("HitShift: " + hitShift.ToString());
+            //tactsuitVr.LOG(" ");
+
+            //tactsuitVr.LOG("Relative x-z-position: " + relativeHitDir.x.ToString() + " "  + relativeHitDir.z.ToString());
+            //tactsuitVr.LOG("HitAngle: " + hitAngle.ToString());
+            //tactsuitVr.LOG("HitShift: " + hitShift.ToString());
+
+            return new KeyValuePair<float, float>(myRotation, hitShift);
+        }
+
+        [HarmonyPatch(typeof(VRPlayerControl), "UpdateWeaponHandedness", new Type[] { })]
+        public class bhaptics_UpdateHandedness
+        {
+            [HarmonyPostfix]
+            public static void Postfix(VRPlayerControl __instance)
+            {
+                isRightHanded = __instance.RightHandedActive;
+            }
+        }
+
 
 
         #region Eating / drinking
@@ -113,28 +165,50 @@ namespace TheForest_bhaptics
             }
         }
 
-        [HarmonyPatch(typeof(FirstPersonCharacter), "HandleLanded", new Type[] { })]
-        public class bhaptics_HandleLanded
+        [HarmonyPatch(typeof(PlayerSfx), "PlayPutOnClothingSfx", new Type[] { })]
+        public class bhaptics_PutOnClothing
         {
             [HarmonyPostfix]
             public static void Postfix()
             {
-                //tactsuitVr.LOG("HandleLanded");
-                //tactsuitVr.PlaybackHaptics("FallDamage");
+                tactsuitVr.LOG("Put on clothing");
             }
         }
-        
+
         [HarmonyPatch(typeof(FirstPersonCharacter), "OnCollisionEnterProxied", new Type[] { typeof(Collision) })]
         public class bhaptics_CollisionEnter
         {
             [HarmonyPostfix]
             public static void Postfix(FirstPersonCharacter __instance, Collision coll)
             {
-                if (coll.impulse.y >= 100f) { tactsuitVr.PlaybackHaptics("FallDamage"); }
-                //tactsuitVr.LOG("Collision impulse: " + coll.impulse.x.ToString() + " " + coll.impulse.y.ToString() + " " + coll.impulse.z.ToString());
+                if (coll.impulse.y >= 100f) { tactsuitVr.PlaybackHaptics("FallDamage"); return; }
+                //tactsuitVr.LOG("Collision vector: " + coll.impulse.x.ToString() + " " + coll.impulse.y.ToString() + " " + coll.impulse.z.ToString());
+                //tactsuitVr.LOG("Collision impulse: " + coll.impulse.magnitude.ToString());
                 //tactsuitVr.LOG("Character rotation: " + __instance.transform.rotation.eulerAngles.y.ToString());
+                string colliderName = coll.collider.name;
+                string[] unimportant_Colliders = { "ground", "Collision", "Collsion_Cube", "MainTerrain" };
+                Transform myPlayer = __instance.transform;
+                float intensity = Math.Min(coll.impulse.magnitude / 100f, 1f);
+                foreach (ContactPoint point in coll.contacts )
+                {
+                    Vector3 myHit = point.point - myPlayer.position;
+                    if (myHit.y >= 0f) { continue; }
+                    if (myHit.y <= -2.0f)
+                    {
+                        // player bumped into something with their feet.
+                        // (fall damage is already done, so) for nonessential stuff, just skip feedback
+                        if (unimportant_Colliders.Any(colliderName.Contains))
+                        {
+                            // tactsuitVr.LOG("Ignored collider: " + colliderName);
+                            continue;
+                        }
+                    }
+                    //tactsuitVr.LOG("Contact point: " + point.point.x.ToString() + " " + point.point.y.ToString() + " " + point.point.z.ToString());
+                    //tactsuitVr.LOG("Hit point: " + myHit.x.ToString() + " " + myHit.y.ToString() + " " + myHit.z.ToString());
+                    var angleShift = getAngleAndShift(myPlayer, point.point);
+                    tactsuitVr.PlayBackHit("Impact", angleShift.Key, angleShift.Value, intensity);
+                }
                 //tactsuitVr.LOG(" ");
-                //tactsuitVr.PlaybackHaptics("FallDamage");
             }
         }
         
@@ -241,6 +315,31 @@ namespace TheForest_bhaptics
             {
                 tactsuitVr.LOG("HitFallDown");
                 tactsuitVr.PlaybackHaptics("FallDamage");
+            }
+        }
+
+        #endregion
+
+        #region Melee
+
+        [HarmonyPatch(typeof(animEventsManager), "axeHitTree", new Type[] {  })]
+        public class bhaptics_axeHitTree
+        {
+            [HarmonyPostfix]
+            public static void Postfix(animEventsManager __instance)
+            {
+                tactsuitVr.GunRecoil(isRightHanded);
+                tactsuitVr.LOG("Weapon collider axeHitTree: " + __instance.heldWeaponCollider.name);
+            }
+        }
+
+        [HarmonyPatch(typeof(animEventsManager), "PlayWeaponOneshot", new Type[] { typeof(string) })]
+        public class bhaptics_PlayWeaponOneshot
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.LOG("Weapon Oneshot");
             }
         }
 

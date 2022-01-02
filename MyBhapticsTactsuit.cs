@@ -118,9 +118,9 @@ namespace MyBhapticsTactsuit
             }
         }
 
-        public void PlayBackHit(String key, float xzAngle, float yShift)
+        public void PlayBackHit(String key, float xzAngle, float yShift, float intensity = 1.0f)
         {
-            bHaptics.ScaleOption scaleOption = new bHaptics.ScaleOption(1f, 1f);
+            bHaptics.ScaleOption scaleOption = new bHaptics.ScaleOption(intensity, 1f);
             bHaptics.RotationOption rotationOption = new bHaptics.RotationOption(xzAngle, yShift);
             bHaptics.SubmitRegistered(key, key, scaleOption, rotationOption);
         }
