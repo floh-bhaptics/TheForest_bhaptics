@@ -119,6 +119,17 @@ namespace TheForest_bhaptics
             }
         }
 
+        [HarmonyPatch(typeof(PlayerSfx), "PlayDrink", new Type[] { })]
+        public class bhaptics_PlayDrink
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("Drinking");
+            }
+        }
+
+
         [HarmonyPatch(typeof(PlayerSfx), "PlayStaminaBreath", new Type[] { })]
         public class bhaptics_PlayStaminaBreath
         {
@@ -155,23 +166,63 @@ namespace TheForest_bhaptics
         #region World interaction
 
         [HarmonyPatch(typeof(WaterViz), "Update", new Type[] {  })]
-        public class bhaptics_InWaterChecker
+        public class bhaptics_WaterViz
         {
             [HarmonyPostfix]
             public static void Postfix(WaterViz __instance)
             {
-                if (!__instance.InWater) { tactsuitVr.StopWater(); return; }
-                else { tactsuitVr.StartWater(); }
+                if (!__instance.InWater) { tactsuitVr.StopDiving(); return; }
+                else { tactsuitVr.StartDiving(); }
             }
         }
 
-        [HarmonyPatch(typeof(PlayerSfx), "PlayPutOnClothingSfx", new Type[] { })]
-        public class bhaptics_PutOnClothing
+        [HarmonyPatch(typeof(PlayerSfx), "PlayOpenInventory", new Type[] { })]
+        public class bhaptics_OpenInventory
         {
             [HarmonyPostfix]
             public static void Postfix()
             {
-                tactsuitVr.LOG("Put on clothing");
+                tactsuitVr.PlaybackHaptics("GetBackpack");
+            }
+        }
+
+        [HarmonyPatch(typeof(PlayerSfx), "PlayCloseInventory", new Type[] { })]
+        public class bhaptics_CloseInventory
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("PutAwayBackpack");
+            }
+        }
+
+        [HarmonyPatch(typeof(RainSfx), "OnEnable", new Type[] { })]
+        public class bhaptics_StartRain
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.StartRain();
+            }
+        }
+
+        [HarmonyPatch(typeof(RainSfx), "OnDisable", new Type[] { })]
+        public class bhaptics_StopRain
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.StopRain();
+            }
+        }
+
+        [HarmonyPatch(typeof(TheForest.World.WeatherSystem), "Lightning", new Type[] { })]
+        public class bhaptics_Lightning
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.PlaybackHaptics("Thunder");
             }
         }
 
@@ -436,6 +487,7 @@ namespace TheForest_bhaptics
             [HarmonyPostfix]
             public static void Postfix()
             {
+                tactsuitVr.StopHapticFeedback("PlaneFall");
                 tactsuitVr.PlaybackHaptics("HeartBeat");
             }
         }

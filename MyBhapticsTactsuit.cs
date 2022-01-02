@@ -14,6 +14,7 @@ namespace MyBhapticsTactsuit
         private static ManualResetEvent HeartBeat_mrse = new ManualResetEvent(false);
         private static ManualResetEvent Water_mrse = new ManualResetEvent(false);
         private static ManualResetEvent Shivering_mrse = new ManualResetEvent(false);
+        private static ManualResetEvent Diving_mrse = new ManualResetEvent(false);
         public Dictionary<String, FileInfo> FeedbackMap = new Dictionary<String, FileInfo>();
 
         private static bHaptics.RotationOption defaultRotationOption = new bHaptics.RotationOption(0.0f, 0.0f);
@@ -48,6 +49,16 @@ namespace MyBhapticsTactsuit
             }
         }
 
+        public void DivingFunc()
+        {
+            while (true)
+            {
+                Diving_mrse.WaitOne();
+                bHaptics.SubmitRegistered("Diving");
+                Thread.Sleep(3050);
+            }
+        }
+
         public TactsuitVR()
         {
             LOG("Initializing suit");
@@ -63,6 +74,8 @@ namespace MyBhapticsTactsuit
             WaterThread.Start();
             Thread ShiveringThread = new Thread(ShiveringFunc);
             ShiveringThread.Start();
+            Thread DivingThread = new Thread(DivingFunc);
+            DivingThread.Start();
         }
 
         public void LOG(string logStr)
@@ -193,15 +206,15 @@ namespace MyBhapticsTactsuit
             HeartBeat_mrse.Reset();
         }
 
-        public void StartWater()
+        public void StartRain()
         {
             Water_mrse.Set();
         }
 
-        public void StopWater()
+        public void StopRain()
         {
             Water_mrse.Reset();
-            StopHapticFeedback("WaterSlushing");
+            StopHapticFeedback("Raining");
         }
 
         public void StartShiver()
@@ -212,6 +225,17 @@ namespace MyBhapticsTactsuit
         public void StopShiver()
         {
             Shivering_mrse.Reset();
+        }
+
+        public void StartDiving()
+        {
+            Diving_mrse.Set();
+        }
+
+        public void StopDiving()
+        {
+            Diving_mrse.Reset();
+            StopHapticFeedback("Diving");
         }
 
         public bool IsPlaying(String effect)
@@ -236,6 +260,9 @@ namespace MyBhapticsTactsuit
         public void StopThreads()
         {
             StopHeartBeat();
+            StopDiving();
+            StopRain();
+            StopShiver();
         }
 
 
