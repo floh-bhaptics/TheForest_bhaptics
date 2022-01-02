@@ -15,6 +15,7 @@ namespace TheForest_bhaptics
     {
         public static TactsuitVR tactsuitVr;
         public static bool isRightHanded = true;
+        public static bool planeFallen = false;
 
         public override void OnApplicationStart()
         {
@@ -69,7 +70,8 @@ namespace TheForest_bhaptics
             [HarmonyPostfix]
             public static void Postfix(VRPlayerControl __instance)
             {
-                isRightHanded = __instance.RightHandedActive;
+                isRightHanded = !__instance.RightHandedActive;
+                //tactsuitVr.LOG("Right hand: " + isRightHanded.ToString());
             }
         }
 
@@ -152,16 +154,15 @@ namespace TheForest_bhaptics
 
         #region World interaction
 
-        [HarmonyPatch(typeof(inWaterChecker), "FixedUpdate", new Type[] {  })]
+        [HarmonyPatch(typeof(WaterViz), "Update", new Type[] {  })]
         public class bhaptics_InWaterChecker
         {
             [HarmonyPostfix]
-            public static void Postfix(inWaterChecker __instance)
+            public static void Postfix(WaterViz __instance)
             {
-                if (!__instance.inWater) { tactsuitVr.StopWater(); return; }
+                if (!__instance.InWater) { tactsuitVr.StopWater(); return; }
                 else { tactsuitVr.StartWater(); }
-                if (__instance.swimming) { tactsuitVr.StartWater(); }
-                tactsuitVr.LOG("Water height: " + __instance.waterHeight.ToString());
+                tactsuitVr.LOG("Water height: " + __instance.WaterLevel.ToString());
             }
         }
 
@@ -322,14 +323,26 @@ namespace TheForest_bhaptics
 
         #region Melee
 
-        [HarmonyPatch(typeof(animEventsManager), "axeHitTree", new Type[] {  })]
+        [HarmonyPatch(typeof(TheForest.Player.WeaponBonus), "OnAttack", new Type[] {  })]
         public class bhaptics_axeHitTree
         {
             [HarmonyPostfix]
-            public static void Postfix(animEventsManager __instance)
+            public static void Postfix()
             {
-                tactsuitVr.GunRecoil(isRightHanded);
-                tactsuitVr.LOG("Weapon collider axeHitTree: " + __instance.heldWeaponCollider.name);
+                //tactsuitVr.Recoil("Blade", isRightHanded);
+                tactsuitVr.LOG("OnAttack");
+            }
+        }
+
+        [HarmonyPatch(typeof(weaponInfo), "OnTriggerEnter", new Type[] { typeof(Collider) })]
+        public class bhaptics_TriggerEnter
+        {
+            [HarmonyPostfix]
+            public static void Postfix(weaponInfo __instance, Collider other)
+            {
+                tactsuitVr.Recoil("Blade", isRightHanded);
+                tactsuitVr.LOG("TriggerEnter: " + __instance.weaponSpeed.ToString());
+                tactsuitVr.LOG("Collider: " + other.name);
             }
         }
 
@@ -382,13 +395,27 @@ namespace TheForest_bhaptics
 
         #region Planecrash cutscene
 
+        [HarmonyPatch(typeof(planeCrashHeight), "skipPlaneCrash", new Type[] { })]
+        public class bhaptics_PlaneCrashSkipped
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                tactsuitVr.StopHapticFeedback("PlaneFall");
+                planeFallen = true;
+            }
+        }
+
         [HarmonyPatch(typeof(planeEvents), "fallForward1", new Type[] { })]
         public class bhaptics_PlaneFallForward1
         {
             [HarmonyPostfix]
             public static void Postfix()
             {
+                if (planeFallen) return;
+                //tactsuitVr.LOG("Fall1");
                 tactsuitVr.PlaybackHaptics("PlaneFall");
+                planeFallen = true;
             }
         }
 
@@ -398,7 +425,9 @@ namespace TheForest_bhaptics
             [HarmonyPostfix]
             public static void Postfix()
             {
-                tactsuitVr.PlaybackHaptics("PlaneFall");
+                //tactsuitVr.LOG("Fall2");
+                tactsuitVr.StopHapticFeedback("PlaneFall");
+                tactsuitVr.PlaybackHaptics("PlaneHitGround");
             }
         }
 
@@ -408,7 +437,20 @@ namespace TheForest_bhaptics
             [HarmonyPostfix]
             public static void Postfix()
             {
+                //tactsuitVr.LOG("Crash");
+                //tactsuitVr.StopHapticFeedback("PlaneFall");
                 tactsuitVr.PlaybackHaptics("PlaneHitGround");
+            }
+        }
+
+        [HarmonyPatch(typeof(planeEvents), "crashStop", new Type[] { })]
+        public class bhaptics_PlaneCrashStop
+        {
+            [HarmonyPostfix]
+            public static void Postfix()
+            {
+                //tactsuitVr.LOG("Crash");
+                tactsuitVr.StopHapticFeedback("PlaneFall");
             }
         }
 
