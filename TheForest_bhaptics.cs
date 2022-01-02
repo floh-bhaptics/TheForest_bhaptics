@@ -24,42 +24,31 @@ namespace TheForest_bhaptics
             tactsuitVr.PlaybackHaptics("HeartBeat");
         }
 
+        #region General updates
+
         private static KeyValuePair<float, float> getAngleAndShift(Transform player, Vector3 hit)
         {
             // bhaptics starts in the front, then rotates to the left. 0° is front, 90° is left, 270° is right.
             Vector3 patternOrigin = new Vector3(0f, 0f, 1f);
             // y is "up", z is "forward" in local coordinates
             Vector3 hitPosition = hit - player.position;
-            //tactsuitVr.LOG("Relative x-z-position: " + hitPosition.x.ToString() + " " + hitPosition.z.ToString());
             Quaternion myPlayerRotation = player.rotation;
             Vector3 playerDir = myPlayerRotation.eulerAngles;
-            //tactsuitVr.LOG("PlayerDir: " + playerDir.y.ToString());
-            //tactsuitVr.LOG("PlayerRot: " + playerRotation.ToString());
             Vector3 flattenedHit = new Vector3(hitPosition.x, 0f, hitPosition.z);
             float earlyhitAngle = Vector3.Angle(flattenedHit, patternOrigin);
             Vector3 earlycrossProduct = Vector3.Cross(flattenedHit, patternOrigin);
             if (earlycrossProduct.y > 0f) { earlyhitAngle *= -1f; }
-            //tactsuitVr.LOG("EarlyHitAngle: " + earlyhitAngle.ToString());
-            //float myRotation = earlyhitAngle - playerRotation;
             float myRotation = earlyhitAngle - playerDir.y;
             myRotation *= -1f;
             if (myRotation < 0f) { myRotation = 360f + myRotation; }
-            //tactsuitVr.LOG("myHitAngle: " + myRotation.ToString());
 
 
             float hitShift = hitPosition.y;
-            //tactsuitVr.LOG("HitShift: " + hitShift.ToString());
             float upperBound = -1.0f;
             float lowerBound = -2.0f;
             if (hitShift > upperBound) { hitShift = 0.5f; }
             else if (hitShift < lowerBound) { hitShift = -0.5f; }
             else { hitShift = (hitShift - lowerBound) / (upperBound - lowerBound) - 0.5f; }
-            //tactsuitVr.LOG("HitShift: " + hitShift.ToString());
-            //tactsuitVr.LOG(" ");
-
-            //tactsuitVr.LOG("Relative x-z-position: " + relativeHitDir.x.ToString() + " "  + relativeHitDir.z.ToString());
-            //tactsuitVr.LOG("HitAngle: " + hitAngle.ToString());
-            //tactsuitVr.LOG("HitShift: " + hitShift.ToString());
 
             return new KeyValuePair<float, float>(myRotation, hitShift);
         }
@@ -75,7 +64,18 @@ namespace TheForest_bhaptics
             }
         }
 
+        [HarmonyPatch(typeof(PlayerStats), "HealthChange", new Type[] { typeof(float) })]
+        public class bhaptics_HealthChange
+        {
+            [HarmonyPostfix]
+            public static void Postfix(PlayerStats __instance, float amount)
+            {
+                if (__instance.IsHealthInGreyZone) { tactsuitVr.StartHeartBeat(); }
+                else { tactsuitVr.StopHeartBeat(); }
+            }
+        }
 
+        #endregion
 
         #region Eating / drinking
 
@@ -162,7 +162,6 @@ namespace TheForest_bhaptics
             {
                 if (!__instance.InWater) { tactsuitVr.StopWater(); return; }
                 else { tactsuitVr.StartWater(); }
-                tactsuitVr.LOG("Water height: " + __instance.WaterLevel.ToString());
             }
         }
 
@@ -268,7 +267,7 @@ namespace TheForest_bhaptics
             [HarmonyPostfix]
             public static void Postfix(int damage, bool ignoreArmor, PlayerStats.DamageType type)
             {
-                tactsuitVr.LOG("Damage: " + type.ToString());
+                //tactsuitVr.LOG("Damage: " + type.ToString());
                 switch (type)
                 {
                     case PlayerStats.DamageType.Drowning:
@@ -321,18 +320,7 @@ namespace TheForest_bhaptics
 
         #endregion
 
-        #region Melee
-
-        [HarmonyPatch(typeof(TheForest.Player.WeaponBonus), "OnAttack", new Type[] {  })]
-        public class bhaptics_axeHitTree
-        {
-            [HarmonyPostfix]
-            public static void Postfix()
-            {
-                //tactsuitVr.Recoil("Blade", isRightHanded);
-                tactsuitVr.LOG("OnAttack");
-            }
-        }
+        #region Weapons
 
         [HarmonyPatch(typeof(weaponInfo), "OnTriggerEnter", new Type[] { typeof(Collider) })]
         public class bhaptics_TriggerEnter
@@ -341,18 +329,6 @@ namespace TheForest_bhaptics
             public static void Postfix(weaponInfo __instance, Collider other)
             {
                 tactsuitVr.Recoil("Blade", isRightHanded);
-                tactsuitVr.LOG("TriggerEnter: " + __instance.weaponSpeed.ToString());
-                tactsuitVr.LOG("Collider: " + other.name);
-            }
-        }
-
-        [HarmonyPatch(typeof(animEventsManager), "PlayWeaponOneshot", new Type[] { typeof(string) })]
-        public class bhaptics_PlayWeaponOneshot
-        {
-            [HarmonyPostfix]
-            public static void Postfix()
-            {
-                tactsuitVr.LOG("Weapon Oneshot");
             }
         }
 
@@ -464,17 +440,6 @@ namespace TheForest_bhaptics
             }
         }
         #endregion
-
-        [HarmonyPatch(typeof(PlayerStats), "HealthChange", new Type[] { typeof(float) })]
-        public class bhaptics_HealthChange
-        {
-            [HarmonyPostfix]
-            public static void Postfix(PlayerStats __instance, float amount)
-            {
-                if (__instance.IsHealthInGreyZone) { tactsuitVr.StartHeartBeat(); }
-                else { tactsuitVr.StopHeartBeat(); }
-            }
-        }
 
     }
 }
