@@ -359,7 +359,7 @@ namespace TheForest_bhaptics
             }
         }
 
-        
+        /*
         [HarmonyPatch(typeof(PlayerStats), "getHitDirection", new Type[] { typeof(Vector3) })]
         public class bhaptics_getHitDirection
         {
@@ -369,7 +369,7 @@ namespace TheForest_bhaptics
                 tactsuitVr.LOG("Hit direction: " + pos.x.ToString() + " " + pos.z.ToString());
             }
         }
-
+        
 
         [HarmonyPatch(typeof(PlayerStats), "hitFallDown", new Type[] {  })]
         public class bhaptics_HitFallDown
@@ -381,7 +381,7 @@ namespace TheForest_bhaptics
                 tactsuitVr.PlaybackHaptics("FallDamage");
             }
         }
-
+        */
         #endregion
 
         #region Weapons
