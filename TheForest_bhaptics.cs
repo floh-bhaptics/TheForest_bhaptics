@@ -75,6 +75,17 @@ namespace TheForest_bhaptics
             }
         }
 
+        [HarmonyPatch(typeof(PlayerStats), "CheckStats", new Type[] {  })]
+        public class bhaptics_CheckStats
+        {
+            [HarmonyPostfix]
+            public static void Postfix(PlayerStats __instance)
+            {
+                if (__instance.IsCold) { tactsuitVr.StartShiver(); }
+                else { tactsuitVr.StopShiver(); }
+            }
+        }
+
         #endregion
 
         #region Eating / drinking
@@ -381,7 +392,7 @@ namespace TheForest_bhaptics
             [HarmonyPostfix]
             public static void Postfix(weaponInfo __instance, Collider other)
             {
-                tactsuitVr.Recoil("Blade", isRightHanded);
+                tactsuitVr.SwordRecoil(isRightHanded);
             }
         }
 

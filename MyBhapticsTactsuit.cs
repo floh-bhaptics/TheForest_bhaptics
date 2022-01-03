@@ -176,9 +176,9 @@ namespace MyBhapticsTactsuit
             var rotationFront = new bHaptics.RotationOption(0f, 0f);
             string postfix = "_L";
             if (isRightHand) { postfix = "_R"; }
-            string keyArm = "Sword" + postfix;
-            string keyVest = "SwordVest" + postfix;
-            string keyHands = "RecoilHands" + postfix;
+            string keyArm = "RecoilBlade" + postfix;
+            string keyVest = "RecoilBladeVest" + postfix;
+            string keyHands = "RecoilBladeHands" + postfix;
             bHaptics.SubmitRegistered(keyHands, keyHands, scaleOption, rotationFront);
             bHaptics.SubmitRegistered(keyArm, keyArm, scaleOption, rotationFront);
             bHaptics.SubmitRegistered(keyVest, keyVest, scaleOption, rotationFront);
