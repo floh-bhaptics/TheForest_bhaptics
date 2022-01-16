@@ -351,7 +351,7 @@ namespace TheForest_bhaptics
                             tactsuitVr.PlaybackHaptics("Poison");
                         break;
                     case PlayerStats.DamageType.Physical:
-                        //tactsuitVr.PlaybackHaptics("Impact");
+                        tactsuitVr.PlaybackHaptics("Impact");
                         break;
                     default:
                         break;
