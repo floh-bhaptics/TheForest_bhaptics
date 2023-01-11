@@ -9,6 +9,9 @@ using UnityEngine;
 
 using MyBhapticsTactsuit;
 
+[assembly: MelonInfo(typeof(TheForest_bhaptics.TheForest_bhaptics), "TheForest_bhaptics", "2.0.0", "Florian Fahrenberger")]
+[assembly: MelonGame("SKS", "TheForest")]
+
 namespace TheForest_bhaptics
 {
     public class TheForest_bhaptics : MelonMod
@@ -17,9 +20,9 @@ namespace TheForest_bhaptics
         public static bool isRightHanded = true;
         public static bool planeFallen = false;
 
-        public override void OnApplicationStart()
+        public override void OnInitializeMelon()
         {
-            base.OnApplicationStart();
+            //base.OnApplicationStart();
             tactsuitVr = new TactsuitVR();
             tactsuitVr.PlaybackHaptics("HeartBeat");
         }
